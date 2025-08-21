@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+solc = "0.8.19"
+
+# Optimism Sepolia Network Configuration
+[rpc_endpoints]
+op_sepolia = "${OP_SEPOLIA_RPC_URL}"
+
+[etherscan]
+op_sepolia = { key = "${ETHERSCAN_API_KEY}", url = "https://api-sepolia-optimistic.etherscan.io/" }
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
