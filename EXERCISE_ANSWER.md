@@ -42,43 +42,18 @@ bool _store; // STORAGE[0x4] - Store function enabler
 - `store()` - Storage function that activates various contract mechanisms  
 - `getAccess()` - Access control function with exploitable logical flaw
 - `0xb70b232d` - Primary drain function requiring elevated privileges
-- `0xcffd46dc` - Hidden backdoor granting "god" privileges via block hash
+- `0xcffd46dc` - Hidden fake backdoor granting "god" privileges via block hash
 - `0xb5d09fae` - Hidden fallback selector enabling direct drainage
 
 ---
 
-## Three Working Attack Methods Discovered
+## Two Working Attack Methods Discovered
 
-Through analysis and testing, I discovered **three different working methods** to drain the contract. Each exploits different vulnerabilities and demonstrates the multiple attack vectors present in the contract.
+Through analysis and testing, I discovered **two different working methods** to drain the contract. Each exploits different vulnerabilities and demonstrates the multiple attack vectors present in the contract.
 
-### Method 1: Block-Based Backdoor Exploitation (`DrainVault.s.sol`)
 
-**Strategy:** Exploit the `0xcffd46dc` backdoor function using block-specific hash calculation.
 
-**Key Discovery:** The backdoor function grants "god" privileges when called with the correct hash:
-```solidity
-function gainAdminAccess(address attacker) internal returns (bool success) {
-    // Calculate the required hash: keccak256("drain", msg.sender, block.number)
-    bytes32 secretHash = keccak256(abi.encode("drain", attacker, block.number));
-    
-    (bool callSuccess,) = TARGET_CONTRACT.call(
-        abi.encodeWithSelector(BACKDOOR_SELECTOR, uint256(secretHash))
-    );
-    
-    return callSuccess;
-}
-```
-
-**Attack Steps:**
-1. Calculate hash using current block number: `keccak256("drain", attacker, block.number)`
-2. Call `0xcffd46dc` with this hash to gain "god" access
-3. Call `0xb70b232d` drain function as privileged user
-
-**Result:** ✅ **SUCCESS**
-
----
-
-### Method 2: Hidden Selector Fallback (`HiddenSelectorDrain.s.sol`)
+### Method 1: Hidden Selector Fallback (`HiddenSelectorDrain.s.sol`)
 
 **Strategy:** Exploit the hidden fallback selector combined with status activation.
 
@@ -102,7 +77,7 @@ function gainAdminAccess(address attacker) internal returns (bool success) {
 
 ---
 
-### Method 3: Sequential Puzzle-Based Attack (`FinalDrainScript.s.sol`)
+### Method 2: Sequential Puzzle-Based Attack (`FinalDrainScript.s.sol`)
 
 **Strategy:** Complete the full intended puzzle sequence to gain admin access.
 
@@ -151,21 +126,8 @@ puzzleInput[3] = 6; // 3 * 2 = 6
 
 The contract contains multiple severe vulnerabilities that enable different attack vectors:
 
-#### 1. Block-Based Backdoor (`0xcffd46dc`)
-A hidden administrative backdoor that grants "god" privileges:
 
-```solidity
-function 0xcffd46dc(uint256 varg0) public nonPayable { 
-    if (!(varg0 - keccak256('drain', msg.sender, block.number))) {
-        v0 = 0x525(0x676f64); // "god" hash
-        mapping_1[msg.sender] = v0; // Grant god privileges
-    }
-}
-```
-
-When called with the correct hash `keccak256("drain", msg.sender, block.number)`, this function grants the highest privileges, bypassing all access controls.
-
-#### 2. Hidden Fallback Selector (`0xb5d09fae`)
+#### 1. Hidden Fallback Selector (`0xb5d09fae`)
 The contract contains a hidden drain function accessible through a specific fallback selector:
 
 ```solidity
@@ -180,7 +142,7 @@ if (!(bytes4(v0) - bytes4(0xb5d09fae7b7af1adf48400132f74ac6d1d5d2e965dfd4f7405cd
 
 This allows direct fund drainage when the status is activated, bypassing normal access controls.
 
-#### 3. Access Control Logic Flaw (`getAccess`)
+#### 2. Access Control Logic Flaw (`getAccess`)
 The `getAccess()` function contains a critical logical vulnerability:
 
 ```solidity
@@ -199,7 +161,7 @@ function getAccess(uint256 _id) public nonPayable {
 
 The condition `uint256(_id ^ 0x42) == _id ^ 0x42` always evaluates to true, making `getAccess(0)` always grant admin privileges.
 
-#### 4. Puzzle Solution Bypass
+#### 3. Puzzle Solution Bypass
 The puzzle function `0x3a279611` can be solved with the simple pattern `[1,2,3,6]`:
 
 ```solidity
@@ -209,7 +171,7 @@ The puzzle function `0x3a279611` can be solved with the simple pattern `[1,2,3,6
 
 This enables the `store` function which is required for several attack paths.
 
-#### 5. Administrative Drain Function
+#### 4. Administrative Drain Function
 Once any form of elevated access is obtained, the main drain function can be called:
 
 ```solidity
@@ -252,5 +214,29 @@ Each attack method was successfully tested by:
 
 This demonstrates that the contract contains **at least three distinct and viable attack vectors**, each exploiting different vulnerability classes.
 
+
+## Failed Attempt: Block-Based Backdoor (DrainVault.s.sol)  
+
+**Strategy:** Attempt to exploit the 0xcffd46dc backdoor function to gain "god" privileges and then drain.
+
+**Key Discovery :** The backdoor function is designed to grant a role hashed from the string "god" when called with the correct keccak256("drain", msg.sender, block.number). However, this creates a race condition that is nearly impossible to win in a live environment.
+
+### Attack Steps Attempted:
+
+- Calculate the required hash using the current block.number.
+
+- Call 0xcffd46dc with this hash.
+
+- Attempt to call the 0xb70b232d drain function.
+
+**Result:** ❌ FAILURE
+
+Analysis: This method fails for two primary reasons:
+
+- Race Condition: The script calculates the hash for block N, but the transaction is executed in block N+1 or later. The contract's internal check compares the provided hash with one it calculates using the new block number, causing the if condition to be false.
+
+- Successful Call, Failed State Change: Because the function doesn't revert when the if condition fails, the low-level .call() from the script reports a success. The script proceeds, unaware that the state change to "god" never actually happened.
+
+The only reason this attack appeared to work during sequential testing was that the attacker's address retained the 'admin' role from a previous, successful run of the puzzle-based FinalDrainScript. The call to the backdoor was a successful "no-op" that didn't overwrite the existing 'admin' role, allowing the subsequent drain call to pass its authorization check. When tested in isolation, this attack vector is not viable.
 
 
