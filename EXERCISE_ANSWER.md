@@ -5,6 +5,8 @@
 ### Objective
 Successfully drain the deployed vault contract at address `0xEF8433eC69ACc8B58522cDbbB899172ae62af4AC` on Optimism Sepolia network without having access to the original source code or ABI.
 
+<br >
+
 ---
 
 ## Methodology
@@ -42,8 +44,10 @@ bool _store; // STORAGE[0x4] - Store function enabler
 - `store()` - Storage function that activates various contract mechanisms  
 - `getAccess()` - Access control function with exploitable logical flaw
 - `0xb70b232d` - Primary drain function requiring elevated privileges
-- `0xcffd46dc` - Hidden fake backdoor granting "god" privileges via block hash
+- `0xcffd46dc` - Hidden but fake backdoor granting "god" privileges via block hash
 - `0xb5d09fae` - Hidden fallback selector enabling direct drainage
+  
+<br >
 
 ---
 
@@ -119,6 +123,8 @@ puzzleInput[3] = 6; // 3 * 2 = 6
 
 **Result:** ✅ **SUCCESS**
 
+<br >
+
 ---
 
 
@@ -191,6 +197,7 @@ function 0xb70b232d() public nonPayable {
 }
 ```
 
+<br >
 
 ---
 
@@ -214,6 +221,9 @@ Each attack method was successfully tested by:
 
 This demonstrates that the contract contains **at least three distinct and viable attack vectors**, each exploiting different vulnerability classes.
 
+<br >
+
+---  
 
 ## Failed Attempt: Block-Based Backdoor (DrainVault.s.sol)  
 
