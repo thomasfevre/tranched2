@@ -219,7 +219,7 @@ Each attack method was successfully tested by:
 3. Verifying complete fund drainage after each successful attack
 4. Confirming that all three methods work reliably
 
-This demonstrates that the contract contains **at least three distinct and viable attack vectors**, each exploiting different vulnerability classes.
+This demonstrates that the contract contains **at least two distinct and viable attack vectors**, each exploiting different vulnerability classes.
 
 <br >
 
