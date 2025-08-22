@@ -250,3 +250,34 @@ Analysis: This method fails for two primary reasons:
 The only reason this attack appeared to work during sequential testing was that the attacker's address retained the 'admin' role from a previous, successful run of the puzzle-based FinalDrainScript. The call to the backdoor was a successful "no-op" that didn't overwrite the existing 'admin' role, allowing the subsequent drain call to pass its authorization check. When tested in isolation, this attack vector is not viable.
 
 
+### Verification 
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import "forge-std/Script.sol";
+import "forge-std/console.sol";
+
+contract ComputeAdminHash is Script {
+    function run() external pure returns (bytes32) {
+        // The salt from the decompiled contract
+        bytes32 salt = 0x651490e7365d8aab49e88aec6ae6efea33c016d3f8f2b6049c60c23c39d9e3ed;
+        // The string 'admin' as bytes
+        bytes memory admin = bytes("admin");
+        // Concatenate 'admin' and the salt
+        bytes memory data = abi.encodePacked(admin, salt);
+        // Compute the keccak256 hash
+        bytes32 hash = keccak256(data);
+        console.logBytes32(hash);
+        return hash;
+    }
+}
+
+// returns 0x996ba0ee353a7cac64975be8f30865e61a5e0dfdacc8eacea3ab61bbb8ea94a0
+
+/* as well as :
+*  $ cast storage 0xEF8433eC69ACc8B58522cDbbB899172ae62af4AC \
+*    $(cast keccak 0x000000000000000000000000893806663c6673b96f61914e17e002e4f303b62f0000000000000000000000000000000000000000000000000000000000000001) \
+*    --rpc-url op_sepolia
+*  0x996ba0ee353a7cac64975be8f30865e61a5e0dfdacc8eacea3ab61bbb8ea94a0
+*/
