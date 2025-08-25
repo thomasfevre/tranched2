@@ -23,7 +23,6 @@ contract FinalDrainScript is Script {
     address constant TARGET_CONTRACT = 0xEF8433eC69ACc8B58522cDbbB899172ae62af4AC;
 
     // Function selectors from decompiled code
-    bytes4 constant PUZZLE_SELECTOR = 0x3a279611;
     bytes4 constant STORE_SELECTOR = 0x7408a1d7;
     bytes4 constant GET_ACCESS_SELECTOR = 0x2fc82012;
     bytes4 constant DRAIN_SELECTOR = 0xb70b232d;
